@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2016,SC2086
+
+shopt -s expand_aliases progcomp
+
+# shellcheck disable=SC1090
+if ! source "$1"; then
+  echo '
+  yallback currently supports a single argument--a yallfile
+  (shell script) defining the callbacks yallback should use.
+
+  see https://github.com/abathur/yallback for more on these
+  callback functions
+  '
+  exit 2
+fi
+
+declare _sort=no \
+  # see below
+  # have_per_rule=no \
+  # have_per_file=no \
+  rules="$(compgen -A function -A alias yallback:rule: | sort -u)"
+
+case "$rules" in
+  *':all '*|*':all')
+    _sort=yes;; # have_per_rule=yes;; # see below
+  # TODO: in theory, this can be supported (and I included it in
+  # other drafts; but I'm not sure how to slot it in here yet, and
+  # I don't have a personal use for it yet, so it can wait...)
+  # *':per-file '*|*':per-file')
+  #   have_per_file=yes;;
+esac
+
+# See above
+# if [[ "$have_per_file$have_per_rule" == "yesyes" ]]; then
+#   echo "Y'all can't mix per-rule and per-file dispatch."
+#   echo "If you really need this:"
+#   echo "1. save the yara output to a file"
+#   echo "2. redirect it to separate invocations with different y'all-files"
+#   exit 2
+# fi
+
+# the performance of the first few swings at this has been a little
+# rough. A vague sketch of the reasons:
+# - there can be a lot of matches/lines in a large yara run, and
+#   there is inevitably a performance cost to iterating that many lines
+# - the old loop accumulated multiple checks per run
+rule_loop(){
+  # TODO: figure out if they come sorted
+  # yallback:rule:rulename:all|each
+  for rulefunc in $rules; do
+    local rule rulesuffix="${rulefunc/yallback:rule:/}"
+    case "$rulefunc" in
+      *:all)
+        # there might be another
+        rule="${rulesuffix/:all/}"
+        # TODO: verify some taken/potential performance compromises in a more rigorous way
+        # - use of `! case $matched_rule in '$rule') false;; esac` over if [[ $matched_rule == '$rule' ]]; then
+        # - whether single quoting '"'"$rule"'"' below increases speed
+        if [[ $rules == *$rule:each* ]]; then
+          echo '
+            # case is faster than [[, but we have to invert it
+            # to get the error codes we want
+            until ! case $matched_rule in '$rule') false;; esac do
+              read -r matched_rule matched_file || break
+            done
+            while ! case $matched_rule in '$rule') false;; esac do
+              # TODO: note that anything the user code echos will currently get pushed
+              # back into the :all callback; not quite sure how this should work
+              "yallback:rule:'$rule':each" "'$rule'" "$matched_file"
+              echo $matched_file
+              read -r matched_rule matched_file || break
+            done | "yallback:rule:'$rule':all" "'$rule'"
+          '
+        else
+          echo '
+            until ! case $matched_rule in '$rule') false;; esac do
+              read -r matched_rule matched_file || break
+            done
+            while ! case $matched_rule in '$rule') false;; esac do
+              echo $matched_file
+              read -r matched_rule matched_file || break
+            done | "yallback:rule:'$rule':all" "'$rule'"
+          '
+        fi
+        ;;
+      *:each)
+        rule="${rulesuffix/:each/}"
+        # if the all form existed, we should already have been handled
+        if ! [[ $rules == *$rule:all* ]]; then
+          echo '
+            until ! case $matched_rule in '$rule') false;; esac do
+              read -r matched_rule matched_file || break
+            done
+            while ! case $matched_rule in '$rule') false;; esac do
+              yallback:rule:'$rule':each "'$rule'" "$matched_file"
+              read -r matched_rule matched_file || break
+            done
+            # as soon as this breaks, we know we hit a new rule
+          '
+        fi
+        ;;
+    esac
+  done
+  _done
+}
+
+_done(){
+  if type -t "yallback:done" >/dev/null; then
+    echo "yallback:done"
+  fi
+}
+
+# shellcheck disable=SC2139
+alias _loop="$(rule_loop)"
+
+main(){
+  # shellcheck disable=SC2034
+  local matched_rule matched_file
+  _loop
+}
+
+if [[ "$_sort" == "yes" ]]; then
+  main < <(sort -k1)
+else
+  main
+fi
