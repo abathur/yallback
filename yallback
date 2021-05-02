@@ -73,15 +73,29 @@ rule_loop(){
             done | "yallback:rule:'$rule':all" "'$rule'"
           '
         else
+          # TODO: tentatively backing away from the ! case
+          # idea because it didn't work if a callback was
+          # supplied for an unmatched rule. See how this
+          # works out and either track in other sections
+          # or swap below back in
           echo '
-            until ! case $matched_rule in '$rule') false;; esac do
+            while [[ $matched_rule < '$rule' ]]; do
               read -r matched_rule matched_file || break
             done
-            while ! case $matched_rule in '$rule') false;; esac do
-              echo $matched_file
-              read -r matched_rule matched_file || break
-            done | "yallback:rule:'$rule':all" "'$rule'"
+            if [[ $matched_rule == '$rule' ]]; then
+              until [[ $matched_rule > '$rule' ]]; do
+                echo $matched_file
+                read -r matched_rule matched_file || break
+              done | yallback:rule:'$rule':all "'$rule'"
+            fi
           '
+            # until ! case $matched_rule in '$rule') false;; esac do
+            #   read -r matched_rule matched_file || break
+            # done
+            # while ! case $matched_rule in '$rule') false;; esac do
+            #   echo $matched_file
+            #   read -r matched_rule matched_file || break
+            # done | "yallback:rule:'$rule':all" "'$rule'"
         fi
         ;;
       *:each)
