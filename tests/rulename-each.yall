@@ -1,0 +1,13 @@
+# - `yallback:rule:<rulename>:each` - receive one call per rule match
+#     - `$1` == `<rulename>`
+#     - `$2` == `<file>`
+
+# $1 == rulename, $2 == matching file
+yallback:rule:binary:each(){
+	expect_rulename_each "$1" "binary"
+	echo "$2" >> "${buffet}"
+}
+
+yallback:done(){
+	ensure_all_rules_were_called "binary"
+}
