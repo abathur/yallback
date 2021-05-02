@@ -15,7 +15,7 @@ if ! source "$1"; then
   exit 2
 fi
 
-declare _sort=no \
+declare _sort_by="rule" \
   # see below
   # have_per_rule=no \
   # have_per_file=no \
@@ -23,7 +23,7 @@ declare _sort=no \
 
 case "$rules" in
   *':all '*|*':all')
-    _sort=yes;; # have_per_rule=yes;; # see below
+    _sort_by="rule";; # have_per_rule=yes;; # see below
   # TODO: in theory, this can be supported (and I included it in
   # other drafts; but I'm not sure how to slot it in here yet, and
   # I don't have a personal use for it yet, so it can wait...)
@@ -120,8 +120,9 @@ main(){
   _loop
 }
 
-if [[ "$_sort" == "yes" ]]; then
-  main < <(sort -k1)
-else
-  main
-fi
+case "$_sort_by" in
+  "file")
+    main < <(sort -k1);;
+  "rule")
+    main < <(sort);;
+esac
