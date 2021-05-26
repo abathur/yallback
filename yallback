@@ -4,10 +4,13 @@
 shopt -s expand_aliases progcomp
 
 # shellcheck disable=SC1090
-if ! source "$1"; then
+if ! source "$@"; then
   echo '
   yallback currently supports a single argument--a yallfile
   (shell script) defining the callbacks yallback should use.
+
+  any remaining arguments are passed to the callback script
+  when yallback sources it.
 
   see https://github.com/abathur/yallback for more on these
   callback functions
