@@ -3,8 +3,14 @@
 
 shopt -s expand_aliases progcomp
 
+# break out 1 and 2 to work around a quirk in how positionals
+# work for source. If none are passed, it inherits. The array
+# arg at the end will expand to no arguments, instead of to
+# one blank string. So, forcibly pass one arg that'll be
+# blank even if there aren't more args.
+
 # shellcheck disable=SC1090
-if ! source "$@"; then
+if ! source "$1" "$2" "${@:3}"; then
   echo '
   yallback currently supports a single argument--a yallfile
   (shell script) defining the callbacks yallback should use.
