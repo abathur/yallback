@@ -2,7 +2,7 @@
 
 with pkgs;
 stdenv.mkDerivation rec {
-  version = "unset";
+  version = "0.1.0";
   pname = "yallback";
   src = lib.cleanSource ./.;
 
@@ -22,7 +22,7 @@ stdenv.mkDerivation rec {
 
   meta = with lib; {
     description = "Callbacks for YARA rule matches";
-    homepage = https://github.com/abathur/yallback;
+    homepage = "https://github.com/abathur/yallback";
     license = licenses.mit;
     maintainers = with maintainers; [ abathur ];
     platforms = platforms.all;
