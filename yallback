@@ -70,16 +70,18 @@ rule_loop(){
           echo '
             # case is faster than [[, but we have to invert it
             # to get the error codes we want
-            until ! case $matched_rule in '$rule') false;; esac do
+            while [[ $matched_rule < '$rule' ]]; do
               read -r matched_rule matched_file || break
             done
-            while ! case $matched_rule in '$rule') false;; esac do
-              # TODO: note that anything the user code echos will currently get pushed
-              # back into the :all callback; not quite sure how this should work
-              "yallback:rule:'$rule':each" "'$rule'" "$matched_file"
-              echo $matched_file
-              read -r matched_rule matched_file || break
-            done | "yallback:rule:'$rule':all" "'$rule'"
+            if [[ $matched_rule == '$rule' ]]; then
+              until [[ $matched_rule > '$rule' ]]; do
+                # TODO: note that anything the user code echos will currently get pushed
+                # back into the :all callback; not quite sure how this should work
+                "yallback:rule:'$rule':each" "'$rule'" "$matched_file"
+                echo $matched_file
+                read -r matched_rule matched_file || break
+              done | "yallback:rule:'$rule':all" "'$rule'"
+            fi
           '
         else
           # TODO: tentatively backing away from the ! case
@@ -112,13 +114,15 @@ rule_loop(){
         # if the all form existed, we should already have been handled
         if ! [[ $rules == *$rule:all* ]]; then
           echo '
-            until ! case $matched_rule in '$rule') false;; esac do
+            while [[ $matched_rule < '$rule' ]]; do
               read -r matched_rule matched_file || break
             done
-            while ! case $matched_rule in '$rule') false;; esac do
-              yallback:rule:'$rule':each "'$rule'" "$matched_file"
-              read -r matched_rule matched_file || break
-            done
+            if [[ $matched_rule == '$rule' ]]; then
+              until [[ $matched_rule > '$rule' ]]; do
+                yallback:rule:'$rule':each "'$rule'" "$matched_file"
+                read -r matched_rule matched_file || break
+              done
+            fi
             # as soon as this breaks, we know we hit a new rule
           '
         fi
