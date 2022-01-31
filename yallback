@@ -80,7 +80,8 @@ rule_loop(){
                 "yallback:rule:'$rule':each" "'$rule'" "$matched_file"
                 echo $matched_file
                 read -r matched_rule matched_file || break
-              done | "yallback:rule:'$rule':all" "'$rule'"
+              done > >(yallback:rule:'$rule':all "'$rule'")
+              await+=("$!")
             fi
           '
         else
@@ -97,7 +98,8 @@ rule_loop(){
               until [[ $matched_rule > '$rule' ]]; do
                 echo $matched_file
                 read -r matched_rule matched_file || break
-              done | yallback:rule:'$rule':all "'$rule'"
+              done > >(yallback:rule:'$rule':all "'$rule'")
+              await+=("$!")
             fi
           '
             # until ! case $matched_rule in '$rule') false;; esac do
@@ -129,6 +131,7 @@ rule_loop(){
         ;;
     esac
   done
+  echo 'wait ${await[@]}'
   _done
 }
 
@@ -144,6 +147,8 @@ alias _loop="$(rule_loop)"
 main(){
   # shellcheck disable=SC2034
   local matched_rule matched_file
+  # shellcheck disable=SC2034
+  local -a await
   _loop
 }
 
