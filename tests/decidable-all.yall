@@ -5,5 +5,7 @@
 # Note: used to be `alias yallback:rule:decidable:all=true`,
 #       but I see pipe errors on linux... fixable?
 yallback:rule:decidable:all(){
-	return 0;
+	if ! expect_rulename_all "$1" "decidable"; then
+		fail "unexpected output"
+	fi
 }
