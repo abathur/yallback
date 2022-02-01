@@ -1,0 +1,11 @@
+# - `yallback:rule:<rulename>:all` - receive all rule matches in a single call
+#     - `$1` == `<rulename>` (this is a convenience, in case you want a single function to handle multiple rules)
+#     - matching files are passed on stdin, one per line
+
+# Note: used to be `alias yallback:rule:decidable:all=true`,
+#       but I see pipe errors on linux... fixable?
+yallback:rule:decidable:all(){
+	if ! expect_rulename_all "$1" "decidable"; then
+		fail "unexpected output"
+	fi
+}

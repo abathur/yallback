@@ -1,0 +1,9 @@
+# - `yallback:rule:<rulename>:all` - receive all rule matches in a single call
+#     - `$1` == `<rulename>` (this is a convenience, in case you want a single function to handle multiple rules)
+#     - matching files are passed on stdin, one per line
+
+yallback:rule:fake:all(){
+	if ! expect_rulename_all "$1" "fake"; then
+		fail "unexpected output"
+	fi
+}
