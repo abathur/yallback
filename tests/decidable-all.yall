@@ -2,4 +2,8 @@
 #     - `$1` == `<rulename>` (this is a convenience, in case you want a single function to handle multiple rules)
 #     - matching files are passed on stdin, one per line
 
-alias yallback:rule:decidable:all=true
+# Note: used to be `alias yallback:rule:decidable:all=true`,
+#       but I see pipe errors on linux... fixable?
+yallback:rule:decidable:all(){
+	return 0;
+}
